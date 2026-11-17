@@ -54,11 +54,8 @@ class FjBaBrandingManager(QObject):
         if not widget.isWindow():
             return False
 
-        try:
-            if widget is self.iface.mainWindow():
-                return False
-        except Exception:
-            pass
+        if widget is self.iface.mainWindow():
+            return False
 
         return True
 
@@ -84,7 +81,7 @@ class FjBaBrandingManager(QObject):
                 self._remove_window(watched)
 
         except RuntimeError:
-            pass
+            return False
 
         return False
 
@@ -110,12 +107,17 @@ class FjBaBrandingManager(QObject):
             label.setObjectName("fjbaBrandOverlay")
 
             label.setAttribute(
-                WidgetAttribute.WA_*,
+                Qt.WA_TransparentForMouseEvents,
                 True
             )
 
             label.setAttribute(
                 Qt.WA_NoSystemBackground,
+                True
+            )
+
+            label.setAttribute(
+                Qt.WA_TranslucentBackground,
                 True
             )
 
