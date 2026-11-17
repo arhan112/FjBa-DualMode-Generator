@@ -165,7 +165,8 @@ def is_numeric_field(field):
     try:
         if field.type() in numeric_types:
             return True
-    except Exception:
+    except (TypeError, ValueError, AttributeError):
+        # Fall back to checking the field's type name.
         pass
 
     try:
@@ -224,9 +225,10 @@ def extract_line_parts(geometry):
     # Convert curved geometry to straight segments where necessary.
     try:
         geometry.convertToStraightSegment()
-    except Exception:
-        # Continue with the available geometry representation.
-        pass
+    except (TypeError, ValueError, AttributeError) as error:
+        raise RuntimeError(
+            f"Could not convert curved geometry to straight segments: {error}"
+        ) from error
 
     if geometry.isMultipart():
         lines = geometry.asMultiPolyline()
@@ -1587,13 +1589,9 @@ def main(iface):
     # Close an older idle dialog before opening a new one.
     if _dual_generator_dialog is not None:
 
-        try:
-
+        if _dual_generator_dialog is not None:
             if _dual_generator_dialog.task is None:
                 _dual_generator_dialog.close()
-
-        except Exception:
-            pass
 
     parent = iface.mainWindow() if iface else None
 
