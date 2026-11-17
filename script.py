@@ -84,11 +84,11 @@ class FjBaMetallicLogo(QWidget):
 
     def paintEvent(self, event):
         painter = QPainter(self)
-        painter.setRenderHint(RenderHint.Antialiasing)
+        painter.setRenderHint(QPainter.Antialiasing)
 
         rect = self.rect()
 
-        font = QFont("Segoe UI", 27, FontWeight.Bold)
+        font = QFont("Segoe UI", 27, QFont.Bold)
         painter.setFont(font)
 
         metrics = painter.fontMetrics()
@@ -163,15 +163,16 @@ def is_numeric_field(field):
     }
 
     try:
-        if field.type() in numeric_types:
-            return True
+        field_type = field.type()
     except (TypeError, ValueError, AttributeError):
-        # Fall back to checking the field's type name.
-        pass
+        field_type = None
+
+    if field_type in numeric_types:
+        return True
 
     try:
         type_name = str(field.typeName()).lower()
-    except Exception:
+    except (TypeError, ValueError, AttributeError):
         type_name = ""
 
     numeric_names = (
@@ -376,7 +377,7 @@ class DualGeneratorTask(QgsTask):
 
                     try:
                         raw_count = attributes[self.field_index]
-                    except Exception:
+                    except (IndexError, TypeError):
                         self.invalid_count_features += 1
                         continue
 
@@ -1588,10 +1589,8 @@ def main(iface):
 
     # Close an older idle dialog before opening a new one.
     if _dual_generator_dialog is not None:
-
-        if _dual_generator_dialog is not None:
-            if _dual_generator_dialog.task is None:
-                _dual_generator_dialog.close()
+        if _dual_generator_dialog.task is None:
+            _dual_generator_dialog.close()
 
     parent = iface.mainWindow() if iface else None
 
