@@ -1,0 +1,14 @@
+[general]
+name=FjBa DualMode Point Generator V1_1
+qgisMinimumVersion=3.22
+description=QGIS plugin generated with FjBa Plugin Generator V8.3 PRO
+version=1.0.0
+author=FjBa
+email=fjoartbajraktari15@gmail.com
+about=Generated with FjBa Plugin Generator V8.3 PRO. Includes FjBa branding.
+category=Plugins
+experimental=False
+deprecated=False
+tags=point, generator, count
+hasProcessingProvider=False
+license=GPL-2.0-or-later

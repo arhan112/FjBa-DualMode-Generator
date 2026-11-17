@@ -1,0 +1,21 @@
+{
+    "marker": "FJBA_PLUGIN_STAMP_V3",
+    "brand": "FjBa",
+    "generator": "FjBa Plugin Generator",
+    "generator_version": "8.3.0",
+    "plugin_name": "DualMode_Point_Generator_V0_1",
+    "logo_included": true,
+    "logo_filename": "fjba_logo.png",
+    "created_utc": "2026-11-09T08:10:58.162774+00:00",
+    "stamp_version": 3,
+    "dependencies": [],
+    "files_sha256": {
+        "FJBa_BRAND.txt": "10b15b7632dbf3f085f2dec2068d6d6d775721d5d08449e5d4f312f17c6bcf3e",
+        "fjba_logo.png": "738a1f4f9171f14688a1f0c01fbd89ad351061b024c23f690ea4f8c48df36c1b",
+        "icon.png": "1fc52cbbdd1619c49e423a359d21156c43cb690b440b4af8839ba6b97382af6a",
+        "main.py": "235a3372067aa235137c66f333b66043f29568dfae23e59d2969714ecec4544b",
+        "metadata.txt": "2460343884d3fe205f39f6bb38ca0a99f183e11518473708e97120be76d8653b",
+        "script.py": "26b579c98c667ee36f69b19963e01a15c7813b0f819452342f3501790e324bcd",
+        "__init__.py": "59553f7dea30708836d3eae212c6c246d35fab5b26d1935a3a84c1d99b27032e"
+    }
+}
