@@ -108,7 +108,7 @@ class FjBaBrandingManager(QObject):
             label.setObjectName("fjbaBrandOverlay")
 
             label.setAttribute(
-                Qt.WA_TransparentForMouseEvents,
+                Qt.WidgetAttribute.WA_TransparentForMouseEvents,
                 True
             )
 
@@ -370,10 +370,9 @@ class FjBaGeneratedPlugin:
 
             logo_label.setPixmap(
                 pixmap.scaled(
-                    340,
-                    135,
-                    Qt.KeepAspectRatio,
-                    Qt.SmoothTransformation
+                    size,
+                    Qt.AspectRatioMode.KeepAspectRatio,
+                    Qt.TransformationMode.SmoothTransformation
                 )
             )
 
@@ -638,10 +637,9 @@ class FjBaGeneratedPlugin:
 
             logo.setPixmap(
                 pixmap.scaled(
-                    260,
-                    115,
-                    Qt.KeepAspectRatio,
-                    Qt.SmoothTransformation
+                    size,
+                    Qt.AspectRatioMode.KeepAspectRatio,
+                    Qt.TransformationMode.SmoothTransformation
                 )
             )
 
