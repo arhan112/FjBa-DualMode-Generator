@@ -6,6 +6,7 @@ import inspect
 import traceback
 import weakref
 
+from qgis.core import QgsMessageLog, Qgis
 from qgis.PyQt.QtCore import Qt, QObject, QEvent
 from qgis.PyQt.QtGui import QIcon, QPixmap
 from qgis.PyQt.QtWidgets import (
@@ -271,15 +272,8 @@ class FjBaGeneratedPlugin:
 
         if self.action is not None:
 
-            try:
-                self.iface.removePluginMenu(
-                    "&FjBa Generated Plugins",
-                    self.action
-                )
-
+            if self.action is not None:
                 self.iface.removeToolBarIcon(self.action)
-            except Exception:
-                pass
 
             self.action = None
 
