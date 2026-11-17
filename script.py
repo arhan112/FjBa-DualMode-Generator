@@ -3,13 +3,19 @@
 # DUALMODE POINT / LINE GENERATOR PRO
 # Dual Mode: Attribute Points OR Line Endpoint Houses
 # FjBa Metallic Logo + Neon UI + Light Mode + QgsTask Engine
+# Qt6 scoped enum compatibility
 # QGIS 3.x
 # =========================================================
 
 import math
 import traceback
 
-from qgis.PyQt.QtCore import Qt, QTimer, QByteArray, QVariant
+from qgis.PyQt.QtCore import (
+    Qt,
+    QTimer,
+    QByteArray
+)
+
 from qgis.PyQt.QtGui import (
     QPainter,
     QPainterPath,
@@ -18,6 +24,7 @@ from qgis.PyQt.QtGui import (
     QColor,
     QPen
 )
+
 from qgis.PyQt.QtWidgets import (
     QWidget,
     QDialog,
@@ -51,10 +58,8 @@ from qgis.core import (
 
 OUTPUT_LAYER_NAME = "generated_output"
 
-# Maximum number of generated output features.
 MAX_OUTPUT_FEATURES = 1000000
 
-# Number of output features inserted per provider batch.
 OUTPUT_BATCH_SIZE = 5000
 
 
@@ -72,7 +77,10 @@ class FjBaMetallicLogo(QWidget):
 
         self.setMinimumSize(70, 70)
         self.setMaximumSize(90, 90)
-        self.setAttribute(Qt.WA_TranslucentBackground)
+
+        self.setAttribute(
+            Qt.WidgetAttribute.WA_TranslucentBackground
+        )
 
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.animate)
@@ -83,12 +91,21 @@ class FjBaMetallicLogo(QWidget):
         self.update()
 
     def paintEvent(self, event):
+
         painter = QPainter(self)
-        painter.setRenderHint(QPainter.Antialiasing)
+
+        painter.setRenderHint(
+            QPainter.RenderHint.Antialiasing
+        )
 
         rect = self.rect()
 
-        font = QFont("Segoe UI", 27, QFont.Bold)
+        font = QFont(
+            "Segoe UI",
+            27,
+            QFont.Weight.Bold
+        )
+
         painter.setFont(font)
 
         metrics = painter.fontMetrics()
@@ -103,8 +120,10 @@ class FjBaMetallicLogo(QWidget):
         path.addText(x, y, font, text)
 
         gradient = QLinearGradient(
-            rect.left(), rect.top(),
-            rect.right(), rect.bottom()
+            rect.left(),
+            rect.top(),
+            rect.right(),
+            rect.bottom()
         )
 
         gradient.setColorAt(0.0, QColor("#FFF2B0"))
@@ -113,7 +132,10 @@ class FjBaMetallicLogo(QWidget):
         gradient.setColorAt(0.68, QColor("#16A879"))
         gradient.setColorAt(1.0, QColor("#075C43"))
 
-        painter.setPen(Qt.NoPen)
+        painter.setPen(
+            Qt.PenStyle.NoPen
+        )
+
         painter.setBrush(gradient)
         painter.drawPath(path)
 
@@ -121,19 +143,36 @@ class FjBaMetallicLogo(QWidget):
         outline.setWidthF(0.8)
 
         painter.setPen(outline)
-        painter.setBrush(Qt.NoBrush)
+
+        painter.setBrush(
+            Qt.BrushStyle.NoBrush
+        )
+
         painter.drawPath(path)
 
         sweep_x = self.phase * rect.width()
 
         sweep = QLinearGradient(
-            sweep_x - 12, 0,
-            sweep_x + 12, 0
+            sweep_x - 12,
+            0,
+            sweep_x + 12,
+            0
         )
 
-        sweep.setColorAt(0.0, QColor(255, 255, 255, 0))
-        sweep.setColorAt(0.5, QColor(255, 255, 255, 180))
-        sweep.setColorAt(1.0, QColor(255, 255, 255, 0))
+        sweep.setColorAt(
+            0.0,
+            QColor(255, 255, 255, 0)
+        )
+
+        sweep.setColorAt(
+            0.5,
+            QColor(255, 255, 255, 180)
+        )
+
+        sweep.setColorAt(
+            1.0,
+            QColor(255, 255, 255, 0)
+        )
 
         painter.save()
         painter.setClipPath(path)
@@ -151,24 +190,16 @@ class FjBaMetallicLogo(QWidget):
 def is_numeric_field(field):
     """
     Determine whether a QgsField is numeric.
-    Uses QVariant types and field type names for compatibility.
+
+    Uses QgsField.isNumeric() when available,
+    then falls back to the provider type name.
     """
 
-    numeric_types = {
-        QVariant.Int,
-        QVariant.UInt,
-        QVariant.LongLong,
-        QVariant.ULongLong,
-        QVariant.Double
-    }
-
     try:
-        field_type = field.type()
+        if field.isNumeric():
+            return True
     except (TypeError, ValueError, AttributeError):
-        field_type = None
-
-    if field_type in numeric_types:
-        return True
+        pass
 
     try:
         type_name = str(field.typeName()).lower()
@@ -187,7 +218,10 @@ def is_numeric_field(field):
         "number"
     )
 
-    return any(name in type_name for name in numeric_names)
+    return any(
+        name in type_name
+        for name in numeric_names
+    )
 
 
 # =========================================================
@@ -196,60 +230,84 @@ def is_numeric_field(field):
 
 def extract_point_components(geometry):
     """
-    Return point components from single or multipart point geometry.
+    Return point components from single or multipart geometry.
     """
 
     if geometry.isEmpty() or geometry.isNull():
         return []
 
     if geometry.isMultipart():
+
         points = geometry.asMultiPoint()
-        return [QgsPointXY(point) for point in points]
+
+        return [
+            QgsPointXY(point)
+            for point in points
+        ]
 
     point = geometry.asPoint()
 
     if point.isEmpty():
         return []
 
-    return [QgsPointXY(point)]
+    return [
+        QgsPointXY(point)
+    ]
 
 
 def extract_line_parts(geometry):
     """
-    Return line components from single or multipart line geometry.
-    Curved geometries are converted to straight segments in place.
+    Return line components from single or multipart geometry.
+
+    Curved geometries are converted to straight segments.
     """
 
     if geometry.isEmpty() or geometry.isNull():
         return []
 
-    # Convert curved geometry to straight segments where necessary.
     try:
+
         geometry.convertToStraightSegment()
+
     except (TypeError, ValueError, AttributeError) as error:
+
         raise RuntimeError(
-            f"Could not convert curved geometry to straight segments: {error}"
+            "Could not convert curved geometry "
+            f"to straight segments: {error}"
         ) from error
 
     if geometry.isMultipart():
+
         lines = geometry.asMultiPolyline()
+
     else:
+
         line = geometry.asPolyline()
+
         lines = [line] if line else []
 
     result = []
 
     for line in lines:
+
         if len(line) >= 2:
-            result.append([QgsPointXY(point) for point in line])
+
+            result.append(
+                [
+                    QgsPointXY(point)
+                    for point in line
+                ]
+            )
 
     return result
 
 
+# =========================================================
+# FEATURE COUNT VALIDATION
+# =========================================================
+
 def parse_feature_count(value):
     """
-    Validate a Point Mode count.
-
     Accepted:
         0
         1
@@ -269,6 +327,7 @@ def parse_feature_count(value):
         return None
 
     try:
+
         if isinstance(value, bool):
             return None
 
@@ -286,6 +345,7 @@ def parse_feature_count(value):
         return int(count)
 
     except (TypeError, ValueError, OverflowError):
+
         return None
 
 
@@ -305,17 +365,14 @@ class DualGeneratorTask(QgsTask):
 
         super().__init__(
             "DualMode Point Generator",
-            QgsTask.CanCancel
+            QgsTask.Flag.CanCancel
         )
 
-        # These are detached snapshots.
-        # No live QgsVectorLayer or QgsFeature is used in run().
         self.source_features = source_features
 
         self.mode = mode
         self.field_index = field_index
 
-        # Used only by finished(), which runs on the main thread.
         self.dialog = dialog
 
         self.output_records = []
@@ -338,10 +395,14 @@ class DualGeneratorTask(QgsTask):
             total = len(self.source_features)
 
             if total == 0:
+
                 self.setProgress(100)
+
                 return True
 
-            for index, snapshot in enumerate(self.source_features):
+            for index, snapshot in enumerate(
+                self.source_features
+            ):
 
                 if self.isCanceled():
                     return False
@@ -351,19 +412,25 @@ class DualGeneratorTask(QgsTask):
                 self.processed_features += 1
 
                 # -----------------------------------------
-                # Restore detached geometry from WKB.
+                # RESTORE DETACHED GEOMETRY
                 # -----------------------------------------
 
                 if not wkb:
+
                     self.empty_geometries += 1
+
                     continue
 
                 geometry = QgsGeometry()
 
-                geometry.fromWkb(QByteArray(wkb))
+                geometry.fromWkb(
+                    QByteArray(wkb)
+                )
 
                 if geometry.isNull() or geometry.isEmpty():
+
                     self.empty_geometries += 1
+
                     continue
 
                 # =========================================
@@ -376,33 +443,48 @@ class DualGeneratorTask(QgsTask):
                         continue
 
                     try:
-                        raw_count = attributes[self.field_index]
+
+                        raw_count = attributes[
+                            self.field_index
+                        ]
+
                     except (IndexError, TypeError):
+
                         self.invalid_count_features += 1
+
                         continue
 
                     count = parse_feature_count(raw_count)
 
                     if count is None:
+
                         self.invalid_count_features += 1
+
                         continue
 
                     if count == 0:
                         continue
 
-                    points = extract_point_components(geometry)
+                    points = extract_point_components(
+                        geometry
+                    )
 
                     if not points:
                         continue
 
                     required = len(points) * count
 
-                    if len(self.output_records) + required > MAX_OUTPUT_FEATURES:
+                    if (
+                        len(self.output_records) + required
+                        > MAX_OUTPUT_FEATURES
+                    ):
+
                         self.exception = RuntimeError(
                             "The maximum output limit of "
                             f"{MAX_OUTPUT_FEATURES:,} features "
                             "would be exceeded."
                         )
+
                         return False
 
                     for point in points:
@@ -426,16 +508,23 @@ class DualGeneratorTask(QgsTask):
 
                 elif self.mode == "line":
 
-                    lines = extract_line_parts(geometry)
+                    lines = extract_line_parts(
+                        geometry
+                    )
 
                     required = len(lines) * 2
 
-                    if len(self.output_records) + required > MAX_OUTPUT_FEATURES:
+                    if (
+                        len(self.output_records) + required
+                        > MAX_OUTPUT_FEATURES
+                    ):
+
                         self.exception = RuntimeError(
                             "The maximum output limit of "
                             f"{MAX_OUTPUT_FEATURES:,} features "
                             "would be exceeded."
                         )
+
                         return False
 
                     for line in lines:
@@ -479,18 +568,21 @@ class DualGeneratorTask(QgsTask):
         except Exception as error:
 
             self.exception = error
+
             self.traceback_text = traceback.format_exc()
 
             return False
 
     # =====================================================
     # FINISHED
-    # Main-thread output creation happens in the dialog.
     # =====================================================
 
     def finished(self, result):
 
-        self.dialog.task_finished(self, result)
+        self.dialog.task_finished(
+            self,
+            result
+        )
 
 
 # =========================================================
@@ -512,7 +604,10 @@ class DualGeneratorDialog(QDialog):
         self.output_fields = None
         self.output_crs = None
 
-        self.setWindowTitle("DualMode Point Generator")
+        self.setWindowTitle(
+            "DualMode Point Generator"
+        )
+
         self.resize(650, 450)
 
         self.setMinimumWidth(580)
@@ -522,6 +617,7 @@ class DualGeneratorDialog(QDialog):
         # -------------------------------------------------
 
         main_layout = QVBoxLayout()
+
         main_layout.setSpacing(9)
 
         # =================================================
@@ -529,6 +625,7 @@ class DualGeneratorDialog(QDialog):
         # =================================================
 
         header = QHBoxLayout()
+
         header.setSpacing(10)
 
         self.logo = FjBaMetallicLogo()
@@ -536,10 +633,13 @@ class DualGeneratorDialog(QDialog):
         header.addWidget(
             self.logo,
             0,
-            Qt.AlignLeft | Qt.AlignVCenter
+            Qt.AlignmentFlag.AlignLeft
+            | Qt.AlignmentFlag.AlignVCenter
         )
 
-        title = QLabel("DualMode Point Generator")
+        title = QLabel(
+            "DualMode Point Generator"
+        )
 
         title.setStyleSheet(
             "font-size:22px;font-weight:bold;"
@@ -548,7 +648,7 @@ class DualGeneratorDialog(QDialog):
         header.addWidget(
             title,
             0,
-            Qt.AlignVCenter
+            Qt.AlignmentFlag.AlignVCenter
         )
 
         header.addStretch()
@@ -559,17 +659,23 @@ class DualGeneratorDialog(QDialog):
         # INPUT LAYER
         # =================================================
 
-        main_layout.addWidget(QLabel("Input Layer"))
+        main_layout.addWidget(
+            QLabel("Input Layer")
+        )
 
         self.layer_combo = QComboBox()
 
-        main_layout.addWidget(self.layer_combo)
+        main_layout.addWidget(
+            self.layer_combo
+        )
 
         # =================================================
         # MODE SELECTION
         # =================================================
 
-        main_layout.addWidget(QLabel("Mode"))
+        main_layout.addWidget(
+            QLabel("Mode")
+        )
 
         self.mode_point = QCheckBox(
             "Point mode (attribute → copies)"
@@ -581,15 +687,25 @@ class DualGeneratorDialog(QDialog):
 
         self.mode_point.setChecked(True)
 
-        # Make the two checkboxes mutually exclusive.
         self.mode_group = QButtonGroup(self)
+
         self.mode_group.setExclusive(True)
 
-        self.mode_group.addButton(self.mode_point)
-        self.mode_group.addButton(self.mode_line)
+        self.mode_group.addButton(
+            self.mode_point
+        )
 
-        main_layout.addWidget(self.mode_point)
-        main_layout.addWidget(self.mode_line)
+        self.mode_group.addButton(
+            self.mode_line
+        )
+
+        main_layout.addWidget(
+            self.mode_point
+        )
+
+        main_layout.addWidget(
+            self.mode_line
+        )
 
         # =================================================
         # FIELD SELECTION
@@ -601,7 +717,9 @@ class DualGeneratorDialog(QDialog):
 
         self.field_combo = QComboBox()
 
-        main_layout.addWidget(self.field_combo)
+        main_layout.addWidget(
+            self.field_combo
+        )
 
         # =================================================
         # STATUS LABEL
@@ -613,34 +731,47 @@ class DualGeneratorDialog(QDialog):
 
         self.status_label.setWordWrap(True)
 
-        main_layout.addWidget(self.status_label)
+        main_layout.addWidget(
+            self.status_label
+        )
 
         # =================================================
         # PROGRESS BAR
         # =================================================
 
         self.progress = QProgressBar()
+
         self.progress.setValue(0)
 
-        main_layout.addWidget(self.progress)
+        main_layout.addWidget(
+            self.progress
+        )
 
         # =================================================
         # RUN BUTTON
         # =================================================
 
-        self.run_btn = QPushButton("RUN GENERATOR")
+        self.run_btn = QPushButton(
+            "RUN GENERATOR"
+        )
 
         self.run_btn.setMinimumHeight(38)
 
-        main_layout.addWidget(self.run_btn)
+        main_layout.addWidget(
+            self.run_btn
+        )
 
         # =================================================
         # THEME BUTTON
         # =================================================
 
-        self.theme_btn = QPushButton("🌙 Toggle Theme")
+        self.theme_btn = QPushButton(
+            "Toggle Theme"
+        )
 
-        main_layout.addWidget(self.theme_btn)
+        main_layout.addWidget(
+            self.theme_btn
+        )
 
         self.setLayout(main_layout)
 
@@ -714,7 +845,9 @@ class DualGeneratorDialog(QDialog):
         if not layer_id:
             return None
 
-        layer = QgsProject.instance().mapLayer(layer_id)
+        layer = QgsProject.instance().mapLayer(
+            layer_id
+        )
 
         if not isinstance(layer, QgsVectorLayer):
             return None
@@ -735,10 +868,14 @@ class DualGeneratorDialog(QDialog):
         layer = self.get_layer()
 
         if not layer:
+
             self.update_mode_controls()
+
             return
 
-        for index, field in enumerate(layer.fields()):
+        for index, field in enumerate(
+            layer.fields()
+        ):
 
             if is_numeric_field(field):
 
@@ -762,11 +899,13 @@ class DualGeneratorDialog(QDialog):
             self.field_combo.setEnabled(True)
 
             if self.field_combo.count() == 0:
+
                 self.status_label.setText(
                     "Point Mode requires a numeric attribute field."
                 )
 
             elif layer:
+
                 self.status_label.setText(
                     "Point Mode: each point receives the number "
                     "of copies specified by its selected field."
@@ -815,7 +954,10 @@ class DualGeneratorDialog(QDialog):
                 layer.wkbType()
             )
 
-            if geometry_type != QgsWkbTypes.PointGeometry:
+            if (
+                geometry_type
+                != QgsWkbTypes.GeometryType.PointGeometry
+            ):
 
                 self.run_btn.setEnabled(False)
 
@@ -831,7 +973,10 @@ class DualGeneratorDialog(QDialog):
                 layer.wkbType()
             )
 
-            if geometry_type != QgsWkbTypes.LineGeometry:
+            if (
+                geometry_type
+                != QgsWkbTypes.GeometryType.LineGeometry
+            ):
 
                 self.run_btn.setEnabled(False)
 
@@ -851,7 +996,7 @@ class DualGeneratorDialog(QDialog):
 
     # =====================================================
     # SNAPSHOT INPUT DATA
-    # Main thread only.
+    # MAIN THREAD ONLY
     # =====================================================
 
     def create_source_snapshot(self, layer):
@@ -863,11 +1008,18 @@ class DualGeneratorDialog(QDialog):
             geometry = feature.geometry()
 
             if geometry is None or geometry.isNull():
-                wkb = b""
-            else:
-                wkb = bytes(geometry.asWkb())
 
-            attributes = list(feature.attributes())
+                wkb = b""
+
+            else:
+
+                wkb = bytes(
+                    geometry.asWkb()
+                )
+
+            attributes = list(
+                feature.attributes()
+            )
 
             snapshots.append(
                 (
@@ -900,7 +1052,7 @@ class DualGeneratorDialog(QDialog):
             return
 
         # -------------------------------------------------
-        # Determine mode.
+        # DETERMINE MODE
         # -------------------------------------------------
 
         if self.mode_point.isChecked():
@@ -911,7 +1063,10 @@ class DualGeneratorDialog(QDialog):
                 layer.wkbType()
             )
 
-            if geometry_type != QgsWkbTypes.PointGeometry:
+            if (
+                geometry_type
+                != QgsWkbTypes.GeometryType.PointGeometry
+            ):
 
                 QMessageBox.warning(
                     self,
@@ -936,13 +1091,17 @@ class DualGeneratorDialog(QDialog):
         elif self.mode_line.isChecked():
 
             mode = "line"
+
             field_index = None
 
             geometry_type = QgsWkbTypes.geometryType(
                 layer.wkbType()
             )
 
-            if geometry_type != QgsWkbTypes.LineGeometry:
+            if (
+                geometry_type
+                != QgsWkbTypes.GeometryType.LineGeometry
+            ):
 
                 QMessageBox.warning(
                     self,
@@ -963,14 +1122,15 @@ class DualGeneratorDialog(QDialog):
             return
 
         # -------------------------------------------------
-        # Capture fields and CRS on main thread.
+        # CAPTURE FIELDS AND CRS ON MAIN THREAD
         # -------------------------------------------------
 
         self.output_fields = layer.fields()
+
         self.output_crs = layer.crs()
 
         # -------------------------------------------------
-        # Snapshot input features on main thread.
+        # SNAPSHOT INPUT DATA
         # -------------------------------------------------
 
         self.run_btn.setEnabled(False)
@@ -1018,7 +1178,7 @@ class DualGeneratorDialog(QDialog):
             return
 
         # -------------------------------------------------
-        # Create background task.
+        # CREATE BACKGROUND TASK
         # -------------------------------------------------
 
         self.status_label.setText(
@@ -1037,7 +1197,7 @@ class DualGeneratorDialog(QDialog):
         )
 
         # -------------------------------------------------
-        # Add task to QGIS task manager.
+        # ADD TASK TO QGIS TASK MANAGER
         # -------------------------------------------------
 
         try:
@@ -1076,7 +1236,7 @@ class DualGeneratorDialog(QDialog):
 
     # =====================================================
     # CREATE OUTPUT LAYER
-    # Main thread only.
+    # MAIN THREAD ONLY
     # =====================================================
 
     def create_output_layer(self, task):
@@ -1093,12 +1253,14 @@ class DualGeneratorDialog(QDialog):
                 "Could not create the output memory layer."
             )
 
-        output_layer.setCrs(self.output_crs)
+        output_layer.setCrs(
+            self.output_crs
+        )
 
         provider = output_layer.dataProvider()
 
         # -----------------------------------------------
-        # Copy source attributes.
+        # COPY SOURCE ATTRIBUTES
         # -----------------------------------------------
 
         if self.output_fields is not None:
@@ -1114,7 +1276,7 @@ class DualGeneratorDialog(QDialog):
         output_layer.updateFields()
 
         # -----------------------------------------------
-        # Check for generated records.
+        # CHECK GENERATED RECORDS
         # -----------------------------------------------
 
         if not task.output_records:
@@ -1122,7 +1284,7 @@ class DualGeneratorDialog(QDialog):
             return output_layer
 
         # -----------------------------------------------
-        # Insert features in batches.
+        # INSERT FEATURES IN BATCHES
         # -----------------------------------------------
 
         records = task.output_records
@@ -1162,8 +1324,6 @@ class DualGeneratorDialog(QDialog):
 
             result = provider.addFeatures(batch)
 
-            # PyQGIS commonly returns (success, features).
-            # Handle either tuple or boolean return formats.
             if isinstance(result, tuple):
 
                 success = result[0]
@@ -1176,7 +1336,7 @@ class DualGeneratorDialog(QDialog):
 
                 raise RuntimeError(
                     "The memory provider failed while inserting "
-                    f"output features in batch {start}–{end}."
+                    f"output features in batch {start}-{end}."
                 )
 
             self.progress.setValue(
@@ -1191,7 +1351,7 @@ class DualGeneratorDialog(QDialog):
 
     # =====================================================
     # TASK FINISHED
-    # Called on main QGIS thread.
+    # CALLED ON MAIN QGIS THREAD
     # =====================================================
 
     def task_finished(self, task, result):
@@ -1199,7 +1359,7 @@ class DualGeneratorDialog(QDialog):
         try:
 
             # ---------------------------------------------
-            # Restore UI.
+            # RESTORE UI
             # ---------------------------------------------
 
             self.task = None
@@ -1207,7 +1367,7 @@ class DualGeneratorDialog(QDialog):
             self.run_btn.setEnabled(True)
 
             # ---------------------------------------------
-            # Cancellation.
+            # CANCELLATION
             # ---------------------------------------------
 
             if task.isCanceled():
@@ -1219,7 +1379,9 @@ class DualGeneratorDialog(QDialog):
                 self.progress.setValue(0)
 
                 if self.close_when_finished:
+
                     self.close()
+
                     return
 
                 QMessageBox.information(
@@ -1231,7 +1393,7 @@ class DualGeneratorDialog(QDialog):
                 return
 
             # ---------------------------------------------
-            # Task error.
+            # TASK ERROR
             # ---------------------------------------------
 
             if not result:
@@ -1249,13 +1411,16 @@ class DualGeneratorDialog(QDialog):
                 )
 
                 if task.traceback_text:
+
                     error_text += (
                         "\n\nTechnical details:\n"
                         + task.traceback_text
                     )
 
                 if self.close_when_finished:
+
                     self.close()
+
                     return
 
                 QMessageBox.critical(
@@ -1267,7 +1432,7 @@ class DualGeneratorDialog(QDialog):
                 return
 
             # ---------------------------------------------
-            # No generated points.
+            # NO GENERATED POINTS
             # ---------------------------------------------
 
             if not task.output_records:
@@ -1279,7 +1444,9 @@ class DualGeneratorDialog(QDialog):
                 )
 
                 if self.close_when_finished:
+
                     self.close()
+
                     return
 
                 QMessageBox.information(
@@ -1294,7 +1461,7 @@ class DualGeneratorDialog(QDialog):
                 return
 
             # ---------------------------------------------
-            # Create output layer on main thread.
+            # CREATE OUTPUT LAYER
             # ---------------------------------------------
 
             self.status_label.setText(
@@ -1303,12 +1470,16 @@ class DualGeneratorDialog(QDialog):
 
             QApplication.processEvents()
 
-            output_layer = self.create_output_layer(task)
+            output_layer = self.create_output_layer(
+                task
+            )
 
             if output_layer.featureCount() == 0:
 
                 if self.close_when_finished:
+
                     self.close()
+
                     return
 
                 QMessageBox.information(
@@ -1320,7 +1491,7 @@ class DualGeneratorDialog(QDialog):
                 return
 
             # ---------------------------------------------
-            # Add output to QGIS project.
+            # ADD OUTPUT TO QGIS PROJECT
             # ---------------------------------------------
 
             QgsProject.instance().addMapLayer(
@@ -1334,10 +1505,12 @@ class DualGeneratorDialog(QDialog):
             )
 
             # ---------------------------------------------
-            # Statistics.
+            # STATISTICS
             # ---------------------------------------------
 
-            generated = len(task.output_records)
+            generated = len(
+                task.output_records
+            )
 
             statistics = (
                 "Generation completed successfully.\n\n"
@@ -1352,7 +1525,9 @@ class DualGeneratorDialog(QDialog):
             )
 
             if self.close_when_finished:
+
                 self.close()
+
                 return
 
             QMessageBox.information(
@@ -1382,9 +1557,11 @@ class DualGeneratorDialog(QDialog):
             task.output_records = []
 
             if self.close_when_finished:
+
                 self.close()
 
             else:
+
                 self.validate_current_selection()
 
     # =====================================================
@@ -1396,8 +1573,11 @@ class DualGeneratorDialog(QDialog):
         self.dark_mode = not self.dark_mode
 
         if self.dark_mode:
+
             self.apply_dark_theme()
+
         else:
+
             self.apply_light_theme()
 
     # =====================================================
@@ -1558,8 +1738,7 @@ class DualGeneratorDialog(QDialog):
 
             self.task.cancel()
 
-            # Do not destroy the dialog while the task
-            # still has a finished() callback referencing it.
+            # Keep the dialog alive until the task callback.
             event.ignore()
 
             return
@@ -1573,7 +1752,6 @@ class DualGeneratorDialog(QDialog):
 
 # =========================================================
 # GLOBAL DIALOG REFERENCE
-# Prevents the modeless dialog from being garbage collected.
 # =========================================================
 
 _dual_generator_dialog = None
@@ -1589,12 +1767,16 @@ def main(iface):
 
     # Close an older idle dialog before opening a new one.
     if _dual_generator_dialog is not None:
+
         if _dual_generator_dialog.task is None:
+
             _dual_generator_dialog.close()
 
     parent = iface.mainWindow() if iface else None
 
-    _dual_generator_dialog = DualGeneratorDialog(parent)
+    _dual_generator_dialog = DualGeneratorDialog(
+        parent
+    )
 
     _dual_generator_dialog.show()
     _dual_generator_dialog.raise_()
