@@ -2,7 +2,7 @@
 name=FjBa_DualMode_Point_Generator_V1_1
 qgisMinimumVersion=3.22
 description=QGIS plugin generated with FjBa Plugin Generator V8.3 PRO
-version=1.1.3
+version=1.1.4
 author=FjBa
 email=fjoartbajraktari15@gmail.com
 about=Generated with FjBa Plugin Generator V8.3 PRO. Includes FjBa branding.
