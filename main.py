@@ -159,7 +159,7 @@ class FjBaBrandingManager(QObject):
             QgsMessageLog.logMessage(
                 "Could not brand window: " + str(error),
                 PLUGIN_DISPLAY_NAME,
-                Qgis.Warning
+                Qgis.MessageLevel.Warning
             )
 
     def _position_logo(self, widget):
@@ -299,7 +299,7 @@ class FjBaGeneratedPlugin:
                 QgsMessageLog.logMessage(
                     "Could not remove plugin action: " + str(error),
                     PLUGIN_DISPLAY_NAME,
-                    Qgis.Warning
+                    Qgis.MessageLevel.Warning
                 )
 
             self.action = None
