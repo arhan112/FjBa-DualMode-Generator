@@ -22,7 +22,8 @@ from qgis.PyQt.QtGui import (
     QFont,
     QLinearGradient,
     QColor,
-    QPen
+    QPen,
+    QTransform
 )
 
 from qgis.PyQt.QtWidgets import (
@@ -75,8 +76,10 @@ class FjBaMetallicLogo(QWidget):
 
         self.phase = 0.0
 
-        self.setMinimumSize(70, 70)
-        self.setMaximumSize(90, 90)
+        # Medium logo footprint: larger lettering while retaining a safe
+        # margin around every character in the dialog header.
+        self.setMinimumSize(160, 76)
+        self.setMaximumSize(160, 76)
 
         self.setAttribute(
             Qt.WidgetAttribute.WA_TranslucentBackground
@@ -100,24 +103,44 @@ class FjBaMetallicLogo(QWidget):
 
         rect = self.rect()
 
-        font = QFont(
-            "Segoe UI",
-            27,
-            QFont.Weight.Bold
-        )
+        font = QFont("Segoe UI", 32, QFont.Weight.Bold)
+        font.setPixelSize(32)
 
         painter.setFont(font)
 
-        metrics = painter.fontMetrics()
         text = "FjBa"
 
-        text_width = metrics.horizontalAdvance(text)
+        # Measure the actual glyph outline, rather than relying on the
+        # font's line box. This keeps ascenders/descenders inside the widget.
+        probe = QPainterPath()
+        probe.addText(0, 0, font, text)
+        bounds = probe.boundingRect()
 
-        x = (rect.width() - text_width) / 2
-        y = rect.height() * 0.62
+        margin = 5.0
+        available_width = max(1.0, rect.width() - 2.0 * margin)
+        available_height = max(1.0, rect.height() - 2.0 * margin)
+        scale = min(
+            1.0,
+            available_width / max(1.0, bounds.width()),
+            available_height / max(1.0, bounds.height())
+        )
+
+        # Scale only when the installed system font is unexpectedly large,
+        # then center the real outline with a small safety margin.
+        x = (rect.width() - bounds.width() * scale) / 2.0 - bounds.left() * scale
+        y = (rect.height() - bounds.height() * scale) / 2.0 - bounds.top() * scale
 
         path = QPainterPath()
-        path.addText(x, y, font, text)
+        path.addText(0, 0, font, text)
+        if scale != 1.0:
+            transform = QTransform()
+            transform.translate(x, y)
+            transform.scale(scale, scale)
+            path = transform.map(path)
+        else:
+            transform = QTransform()
+            transform.translate(x, y)
+            path = transform.map(path)
 
         gradient = QLinearGradient(
             rect.left(),
@@ -199,6 +222,8 @@ def is_numeric_field(field):
         if field.isNumeric():
             return True
     except (TypeError, ValueError, AttributeError):
+        # Some QGIS field wrappers may not expose isNumeric().
+        # Continue with the provider type-name fallback below.
         pass
 
     try:
@@ -605,10 +630,22 @@ class DualGeneratorDialog(QDialog):
         self.output_crs = None
 
         self.setWindowTitle(
-            "DualMode Point Generator"
+            "FjBa DualMode Point Generator V1_1"
         )
 
-        self.resize(650, 450)
+        # Use the normal native window frame and explicitly request
+        # the standard minimize, maximize and close buttons.
+        self.setWindowFlags(
+            Qt.WindowType.Window
+            | Qt.WindowType.WindowTitleHint
+            | Qt.WindowType.WindowSystemMenuHint
+            | Qt.WindowType.WindowMinimizeButtonHint
+            | Qt.WindowType.WindowMaximizeButtonHint
+            | Qt.WindowType.WindowCloseButtonHint
+        )
+
+        self.resize(720, 560)
+        self.setMinimumSize(620, 500)
 
         self.setMinimumWidth(580)
 
@@ -638,7 +675,7 @@ class DualGeneratorDialog(QDialog):
         )
 
         title = QLabel(
-            "DualMode Point Generator"
+            "FjBa DualMode Point Generator V1_1"
         )
 
         title.setStyleSheet(
