@@ -6,7 +6,7 @@ Generated with FjBa Plugin Generator V8.3 PRO. Includes FjBa branding.
 
 ## Release information
 
-- **Version:** 1.2.2
+- **Version:** 1.2.3
 - **Author:** FjBa
 - **Category:** Plugins
 - **License identifier selected in the publisher:** Existing license file
