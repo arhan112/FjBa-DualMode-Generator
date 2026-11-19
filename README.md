@@ -1,8 +1,6 @@
 # FjBa DualMode Point Generator V1_1
 
-QGIS plugin generated with FjBa Plugin Generator V8.3 PRO
-
-Generated with FjBa Plugin Generator V8.3 PRO. Includes FjBa branding.
+Generate and duplicate point features and create line endpoints in QGIS.
 
 ## Release information
 
