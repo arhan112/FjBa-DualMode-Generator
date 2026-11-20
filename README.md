@@ -1,10 +1,10 @@
-# FjBa DualMode Point Generator V1_1
+# FjBa DualMode Point Generator
 
 Generate and duplicate point features and create line endpoints in QGIS.
 
 ## Release information
 
-- **Version:** 1.2.3
+- **Version:** 1.2.4
 - **Author:** FjBa
 - **Category:** Plugins
 - **License identifier selected in the publisher:** Existing license file
