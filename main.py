@@ -21,7 +21,7 @@ from qgis.PyQt.QtWidgets import (
     QMessageBox,
 )
 
-PLUGIN_DISPLAY_NAME = "FjBa DualMode Point Generator V1_1"
+PLUGIN_DISPLAY_NAME = "FjBa DualMode Point Generator"
 
 # Logo dimensions used in the launch and About windows.
 LOGO_SIZE = (260, 140)
